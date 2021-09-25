@@ -1,0 +1,84 @@
+性能検証調査
+
+【確認方法】
+①SQLの実行時間測定
+　・実行するSQL前後に以下のSQLを仕込み、実行時間を計測
+　　SELECT current_time;
+　
+　・psqlで以下のコマンドから実行計画を取得
+　  EXPLAIN ANALYZE 測定したいSQL文;
+　  例) EXPLAIN ANALYZE SELECT * FROM item;
+　
+②バッチの実行時間測定
+　・WindowsではPowerShellのコマンドで計測可能
+	コマンドプロンプトを起動して、以下のようにPowerShellを呼び出すことが可能
+	>powershell -command "Measure-Command { C:\Work\datetime.ps1 }"
+
+	秒数だけとりたい場合も以下のように同じように実行可能。
+	>powershell -command "(Measure-Command { C:\Work\datetime.ps1 }).TotalSeconds"
+
+　・Linuxではtimeコマンドにて同様に計測可能
+
+③画面の実行時間測定
+　・アクセスログを出力し、リクエストからレスポンスまでの応答速度を測定
+　
+　・https://www.itmedia.co.jp/enterprise/articles/0911/13/news004.html
+　1 レスポンス時間
+　　負荷ツールを使用して、ネットワーク部分でのデータのやりとりを検証
+　　原因：データの転送量が多い
+　　
+　2 アプリケーションサーバ内部の保留時間
+　　Webサーバのアクセスログを参照して、アプリケーションサーバ内、およびDBなどのバックエンド処理部分の処理を検証
+　　原因：ディスクI/Oの回数が多過ぎる、またはSQL文の発行回数が多過ぎる
+　
+　3 実行CPU時間
+　　OSの稼働統計を参照して、CPU処理時間が長過ぎないかを検証
+　　原因：処理ロジックが冗長である
+　
+
+【改善方法】
+①SQL実行計画の見方と改善方法
+　・「EXPLAIN ANALYZE 測定したいSQL文;」を実行
+　・見方は実際の実行計画画面キャプチャに吹き出しをつける想定
+  https://tech-blog.rakus.co.jp/entry/20200612/postgreSQL
+  
+②SQLの速度改善方法
+　・SELECTなどのキーワードを大文字で記載
+　・CREATE INDEXで検索速度向上
+　・カラムの演算を行わない
+　・IN句をEXISTS句やUNION ALLに置き換え
+　・OR句をUNION ALLに置き換え
+
+③バッチの速度改善方法
+　・SQLの実行回数を減らし、サーバ間の通信回数を減らし、トータルで処理時間を短縮する
+　・ジョブに割り当てるヒープサイズを増やしGC（ガーベージコレクション）の頻発を避ける
+　・プログラムレベルの並列化はジョブの同時実行数が増大し最大同時実行数超えの可能性があるため避ける
+　（並列化するのであれば、ORACLE機能であるパラレル処理を使って高速化する）
+
+④画面の速度改善方法
+・ページ表示速度改善
+　https://techscheme.co.jp/pe-jihyoujisokudo/
+　- 画像ファイルの最適化(適切なフォーマット、最小限のファイルサイズ)
+　- リダイレクトを減らす
+　- 冗長なロジック、SQL性能の見直し
+　
+
+【言語】
+①重くなる命令、軽くなる命令
+②早くするPGの記載方法
+　Java
+　・ループ処理内の変数(for文)
+　　例)for(int i=0;i<list.size();i++)　→for(int i=0,len=list.size();i<len;i++)
+　・配列のコピーはSystem.arraycopy()を使用
+　https://progzakki.sanachan.com/program-lang/java/how-to-improve-performance-of-java-program/
+　
+　	
+【そのほか】
+①性能改善ツールがないか
+　・ETLツール(有償、体験版あり)
+　https://www.ashisuto.co.jp/product/theme/bi/batch_performance.html
+②改善方法の検知ツールはないか
+　・参考)パフォーマンス測定ツール
+　https://www.w2solution.co.jp/tech/2020/08/25/%E7%A7%81%E3%81%8C%E5%AE%9F%E5%8B%99%E3%81%A7%E4%BD%BF%E7%94%A8%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E3%83%91%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%B3%E3%82%B9%E3%83%86%E3%82%B9%E3%83%88%E3%83%84/
+
+
