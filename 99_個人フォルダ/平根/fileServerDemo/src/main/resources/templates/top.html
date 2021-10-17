@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>でもぷろ！</title>
+</head>
+<body>
+
+<table>
+	<tr>
+		<th>名前</th>
+<!--		<th>色</th>-->
+	</tr>
+	<tr th:each="fruit: ${fruitsData}" th:object="${fruit}">
+		<td th:text="*{name}"></td>
+<!--		<td th:text="*{color}"></td>-->
+	</tr>
+</table>
+
+</body>
+</html>
